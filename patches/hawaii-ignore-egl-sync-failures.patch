@@ -1,0 +1,35 @@
+From 6eeb5d13694284332880cdbb1f20726b0709fca6 Mon Sep 17 00:00:00 2001
+From: Tim Schumacher <timschumi@gmx.de>
+Date: Sat, 11 Aug 2018 16:05:47 +0000
+Subject: [PATCH] Ignore EGL sync failures for Broadcom devices
+
+---
+ gpu/config/gpu_driver_bug_list.json | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index 1d3404c5dcc2..963ad904ba8b 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -2924,6 +2924,18 @@
+       "features": [
+         "max_msaa_sample_count_4"
+       ]
++    },
++    {
++      "id": 269,
++      "cr_bugs": [576765],
++      "description": "Broadcom driver gives erroneous sync failures",
++      "os": {
++        "type": "android"
++      },
++      "gl_vendor": "Broadcom.*",
++      "features": [
++        "ignore_egl_sync_failures"
++      ]
+     }
+   ]
+ }
+-- 
+2.18.0
+

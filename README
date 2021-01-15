@@ -1,0 +1,39 @@
+Building the Chromium-based WebView in AOSP is no longer supported. WebView can
+now be built entirely from the Chromium source code.
+
+General instructions for building WebView from Chromium:
+https://www.chromium.org/developers/how-tos/build-instructions-android-webview
+
+------
+
+The prebuilt libwebviewchromium.so included in these APKs is built from Chromium
+release tag 67.0.3396.87, using the GN build tool. To match our build settings, set:
+
+target_os="android"
+is_debug=false
+is_official_build=true
+is_chrome_branded=false
+use_official_google_api_keys=false
+enable_resource_whitelist_generation=true
+ffmpeg_branding="Chrome"
+proprietary_codecs=true
+enable_remoting=true
+is_component_build=false
+enable_nacl=false
+remove_webcore_debug_symbols=true
+android_default_version_name=67.0.3396.87
+android_default_version_code=3396087$$
+
+$$ depends on device ARCH
+
+in your GN argument file before building.
+
+------
+
+Extra patches:
+patches/chromium-theme-color.patch: Provides a callback when a theme color is set by the page
+
+------
+
+For questions about building WebView, please see
+https://groups.google.com/a/chromium.org/forum/#!forum/android-webview-dev
