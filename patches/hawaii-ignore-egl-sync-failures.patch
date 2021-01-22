@@ -1,4 +1,4 @@
-From 6eeb5d13694284332880cdbb1f20726b0709fca6 Mon Sep 17 00:00:00 2001
+From 42571f7e69ff400038ccc7efa59e2e69b16c5fd9 Mon Sep 17 00:00:00 2001
 From: Tim Schumacher <timschumi@gmx.de>
 Date: Sat, 11 Aug 2018 16:05:47 +0000
 Subject: [PATCH] Ignore EGL sync failures for Broadcom devices
@@ -8,16 +8,16 @@ Subject: [PATCH] Ignore EGL sync failures for Broadcom devices
  1 file changed, 12 insertions(+)
 
 diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
-index 1d3404c5dcc2..963ad904ba8b 100644
+index b8330f2d246d..baf6b64cc5fa 100644
 --- a/gpu/config/gpu_driver_bug_list.json
 +++ b/gpu/config/gpu_driver_bug_list.json
-@@ -2924,6 +2924,18 @@
+@@ -3653,6 +3653,18 @@
        "features": [
-         "max_msaa_sample_count_4"
+         "disable_accelerated_vp9_profile2_decode"
        ]
 +    },
 +    {
-+      "id": 269,
++      "id": 362,
 +      "cr_bugs": [576765],
 +      "description": "Broadcom driver gives erroneous sync failures",
 +      "os": {
@@ -31,5 +31,5 @@ index 1d3404c5dcc2..963ad904ba8b 100644
    ]
  }
 -- 
-2.18.0
+2.30.0
 

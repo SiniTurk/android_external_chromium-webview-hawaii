@@ -1,0 +1,127 @@
+From ff703402e9592aebbb7a01615881671cb79d36c5 Mon Sep 17 00:00:00 2001
+From: Tim Schumacher <timschumi@gmx.de>
+Date: Fri, 22 Jan 2021 14:06:38 +0100
+Subject: [PATCH] Revert "aw: Draw bg color until frame return"
+
+This reverts commit eb87d9b251c40c947de251beec7bb58e232c8abe.
+---
+ android_webview/browser/aw_contents.cc                     | 6 ------
+ android_webview/browser/aw_contents.h                      | 2 --
+ android_webview/browser/gfx/browser_view_renderer.cc       | 6 ------
+ android_webview/browser/gfx/browser_view_renderer.h        | 6 ------
+ .../java/src/org/chromium/android_webview/AwContents.java  | 7 -------
+ 5 files changed, 27 deletions(-)
+
+diff --git a/android_webview/browser/aw_contents.cc b/android_webview/browser/aw_contents.cc
+index a1b50d539a20..707ca10b56e7 100644
+--- a/android_webview/browser/aw_contents.cc
++++ b/android_webview/browser/aw_contents.cc
+@@ -1077,12 +1077,6 @@ bool AwContents::OnDraw(JNIEnv* env,
+   return browser_view_renderer_.OnDrawSoftware(canvas_holder->GetCanvas());
+ }
+ 
+-bool AwContents::NeedToDrawBackgroundColor(
+-    JNIEnv* env,
+-    const base::android::JavaParamRef<jobject>& obj) {
+-  return browser_view_renderer_.NeedToDrawBackgroundColor();
+-}
+-
+ void AwContents::SetPendingWebContentsForPopup(
+     std::unique_ptr<content::WebContents> pending) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+diff --git a/android_webview/browser/aw_contents.h b/android_webview/browser/aw_contents.h
+index 877c508ccf0d..528820e0b73d 100644
+--- a/android_webview/browser/aw_contents.h
++++ b/android_webview/browser/aw_contents.h
+@@ -191,8 +191,6 @@ class AwContents : public FindHelper::Listener,
+               jint visible_right,
+               jint visible_bottom,
+               jboolean force_auxiliary_bitmap_rendering);
+-  bool NeedToDrawBackgroundColor(JNIEnv* env,
+-                               const base::android::JavaParamRef<jobject>& obj);
+   jlong CapturePicture(JNIEnv* env,
+                        const base::android::JavaParamRef<jobject>& obj,
+                        int width,
+diff --git a/android_webview/browser/gfx/browser_view_renderer.cc b/android_webview/browser/gfx/browser_view_renderer.cc
+index 82fec21f7b5f..2ec4a5b9e252 100644
+--- a/android_webview/browser/gfx/browser_view_renderer.cc
++++ b/android_webview/browser/gfx/browser_view_renderer.cc
+@@ -397,7 +397,6 @@ void BrowserViewRenderer::ReturnUsedResources(
+   content::SynchronousCompositor* compositor = FindCompositor(frame_sink_id);
+   if (compositor && !resources.empty())
+     compositor->ReturnResources(layer_tree_frame_sink_id, resources);
+-  has_rendered_frame_ = true;
+ }
+ 
+ bool BrowserViewRenderer::OnDrawSoftware(SkCanvas* canvas) {
+@@ -405,10 +404,6 @@ bool BrowserViewRenderer::OnDrawSoftware(SkCanvas* canvas) {
+   return CanOnDraw() && CompositeSW(canvas);
+ }
+ 
+-bool BrowserViewRenderer::NeedToDrawBackgroundColor() {
+-  return !has_rendered_frame_;
+-}
+-
+ sk_sp<SkPicture> BrowserViewRenderer::CapturePicture(int width,
+                                                      int height) {
+   TRACE_EVENT0("android_webview", "BrowserViewRenderer::CapturePicture");
+@@ -547,7 +542,6 @@ void BrowserViewRenderer::ReleaseHardware() {
+         current_compositor_frame_consumer_->PassUncommittedFrameOnUI());
+   }
+   hardware_enabled_ = false;
+-  has_rendered_frame_ = false;
+   ComputeTileRectAndUpdateMemoryPolicy();
+ }
+ 
+diff --git a/android_webview/browser/gfx/browser_view_renderer.h b/android_webview/browser/gfx/browser_view_renderer.h
+index 9b3ebdf5f1b9..803aabc4a71d 100644
+--- a/android_webview/browser/gfx/browser_view_renderer.h
++++ b/android_webview/browser/gfx/browser_view_renderer.h
+@@ -81,8 +81,6 @@ class BrowserViewRenderer : public content::SynchronousCompositorClient,
+   bool OnDrawHardware();
+   bool OnDrawSoftware(SkCanvas* canvas);
+ 
+-  bool NeedToDrawBackgroundColor();
+-
+   // CapturePicture API methods.
+   sk_sp<SkPicture> CapturePicture(int width, int height);
+   void EnableOnNewPicture(bool enabled);
+@@ -242,10 +240,6 @@ class BrowserViewRenderer : public content::SynchronousCompositorClient,
+   // Used for metrics, indicates if we called invalidate since last draw.
+   bool did_invalidate_since_last_draw_ = false;
+ 
+-  // Approximates whether render thread functor has a frame to draw. It is safe
+-  // for Java side to stop blitting the background color once this is true.
+-  bool has_rendered_frame_ = false;
+-
+   bool offscreen_pre_raster_;
+ 
+   CopyOutputRequestQueue copy_requests_;
+diff --git a/android_webview/java/src/org/chromium/android_webview/AwContents.java b/android_webview/java/src/org/chromium/android_webview/AwContents.java
+index 3b77c5c3eb08..c6317e90b2d2 100644
+--- a/android_webview/java/src/org/chromium/android_webview/AwContents.java
++++ b/android_webview/java/src/org/chromium/android_webview/AwContents.java
+@@ -3703,12 +3703,6 @@ public void onDraw(Canvas canvas) {
+                     canvas, canvas.isHardwareAccelerated(), scrollX, scrollY,
+                     globalVisibleRect.left, globalVisibleRect.top, globalVisibleRect.right,
+                     globalVisibleRect.bottom, ForceAuxiliaryBitmapRendering.sResult);
+-            if (canvas.isHardwareAccelerated()
+-                    && AwContentsJni.get().needToDrawBackgroundColor(
+-                            mNativeAwContents, AwContents.this)) {
+-                TraceEvent.instant("DrawBackgroundColor");
+-                canvas.drawColor(getEffectiveBackgroundColor());
+-            }
+             if (did_draw && canvas.isHardwareAccelerated()
+                     && !ForceAuxiliaryBitmapRendering.sResult) {
+                 did_draw = mDrawFunctor.requestDraw(canvas);
+@@ -4077,7 +4071,6 @@ boolean onDraw(long nativeAwContents, AwContents caller, Canvas canvas,
+                 boolean isHardwareAccelerated, int scrollX, int scrollY, int visibleLeft,
+                 int visibleTop, int visibleRight, int visibleBottom,
+                 boolean forceAuxiliaryBitmapRendering);
+-        boolean needToDrawBackgroundColor(long nativeAwContents, AwContents caller);
+         void findAllAsync(long nativeAwContents, AwContents caller, String searchString);
+         void findNext(long nativeAwContents, AwContents caller, boolean forward);
+         void clearMatches(long nativeAwContents, AwContents caller);
+-- 
+2.30.0
+

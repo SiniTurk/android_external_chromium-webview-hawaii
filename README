@@ -7,26 +7,42 @@ https://www.chromium.org/developers/how-tos/build-instructions-android-webview
 ------
 
 The prebuilt libwebviewchromium.so included in these APKs is built from Chromium
-release tag 67.0.3396.87, using the GN build tool. To match our build settings, set:
+release tag 87.0.4280.101, using the GN build tool. To match our build settings, set:
 
-target_os="android"
-is_debug=false
-is_official_build=true
-is_chrome_branded=false
-use_official_google_api_keys=false
-enable_resource_whitelist_generation=true
-ffmpeg_branding="Chrome"
-proprietary_codecs=true
-enable_remoting=true
-is_component_build=false
-enable_nacl=false
-remove_webcore_debug_symbols=true
-android_default_version_name=67.0.3396.87
-android_default_version_code=3396087$$
+target_os = "android"
+is_debug = false
+is_official_build = true
+is_chrome_branded = false
+use_official_google_api_keys = false
+ffmpeg_branding = "Chrome"
+proprietary_codecs = true
+enable_resource_allowlist_generation = false
+enable_remoting = true
+is_component_build = false
+symbol_level = 0
+enable_nacl = false
+blink_symbol_level = 0
+webview_devui_show_icon = false
+android_default_version_name = "87.0.4280.101"
+android_default_version_code = "4280101$$"
 
 $$ depends on device ARCH
+(00=arm, 50=arm64, 10=x86, 60=x64)
 
 in your GN argument file before building.
+
+------
+
+Replace webview icon:
+
+From the chromium/src directory:
+
+mkdir -p android_webview/apk/java/res/drawable-xxxhdpi
+cp chrome/android/java/res_chromium/mipmap-mdpi/app_icon.png android_webview/apk/java/res/drawable-mdpi/icon_webview.png
+cp chrome/android/java/res_chromium/mipmap-hdpi/app_icon.png android_webview/apk/java/res/drawable-hdpi/icon_webview.png
+cp chrome/android/java/res_chromium/mipmap-xhdpi/app_icon.png android_webview/apk/java/res/drawable-xhdpi/icon_webview.png
+cp chrome/android/java/res_chromium/mipmap-xxhdpi/app_icon.png android_webview/apk/java/res/drawable-xxhdpi/icon_webview.png
+cp chrome/android/java/res_chromium/mipmap-xxxhdpi/app_icon.png android_webview/apk/java/res/drawable-xxxhdpi/icon_webview.png
 
 ------
 
