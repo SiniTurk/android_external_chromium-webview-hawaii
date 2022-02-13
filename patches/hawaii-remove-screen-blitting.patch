@@ -1,4 +1,4 @@
-From ff703402e9592aebbb7a01615881671cb79d36c5 Mon Sep 17 00:00:00 2001
+From 3c1ce3349dce2d34e4bc706f41d84a7af2f1c5ec Mon Sep 17 00:00:00 2001
 From: Tim Schumacher <timschumi@gmx.de>
 Date: Fri, 22 Jan 2021 14:06:38 +0100
 Subject: [PATCH] Revert "aw: Draw bg color until frame return"
@@ -13,10 +13,10 @@ This reverts commit eb87d9b251c40c947de251beec7bb58e232c8abe.
  5 files changed, 27 deletions(-)
 
 diff --git a/android_webview/browser/aw_contents.cc b/android_webview/browser/aw_contents.cc
-index a1b50d539a20..707ca10b56e7 100644
+index e67cea2f2e107..8c8175c193325 100644
 --- a/android_webview/browser/aw_contents.cc
 +++ b/android_webview/browser/aw_contents.cc
-@@ -1077,12 +1077,6 @@ bool AwContents::OnDraw(JNIEnv* env,
+@@ -1104,12 +1104,6 @@ bool AwContents::OnDraw(JNIEnv* env,
    return browser_view_renderer_.OnDrawSoftware(canvas_holder->GetCanvas());
  }
  
@@ -30,10 +30,10 @@ index a1b50d539a20..707ca10b56e7 100644
      std::unique_ptr<content::WebContents> pending) {
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
 diff --git a/android_webview/browser/aw_contents.h b/android_webview/browser/aw_contents.h
-index 877c508ccf0d..528820e0b73d 100644
+index b40a0081ac1d5..41592ec936a5b 100644
 --- a/android_webview/browser/aw_contents.h
 +++ b/android_webview/browser/aw_contents.h
-@@ -191,8 +191,6 @@ class AwContents : public FindHelper::Listener,
+@@ -194,8 +194,6 @@ class AwContents : public FindHelper::Listener,
                jint visible_right,
                jint visible_bottom,
                jboolean force_auxiliary_bitmap_rendering);
@@ -43,19 +43,19 @@ index 877c508ccf0d..528820e0b73d 100644
                         const base::android::JavaParamRef<jobject>& obj,
                         int width,
 diff --git a/android_webview/browser/gfx/browser_view_renderer.cc b/android_webview/browser/gfx/browser_view_renderer.cc
-index 82fec21f7b5f..2ec4a5b9e252 100644
+index ffd532d9cbd1b..029fa161e504e 100644
 --- a/android_webview/browser/gfx/browser_view_renderer.cc
 +++ b/android_webview/browser/gfx/browser_view_renderer.cc
-@@ -397,7 +397,6 @@ void BrowserViewRenderer::ReturnUsedResources(
+@@ -403,7 +403,6 @@ void BrowserViewRenderer::ReturnUsedResources(
    content::SynchronousCompositor* compositor = FindCompositor(frame_sink_id);
    if (compositor && !resources.empty())
-     compositor->ReturnResources(layer_tree_frame_sink_id, resources);
+     compositor->ReturnResources(layer_tree_frame_sink_id, std::move(resources));
 -  has_rendered_frame_ = true;
  }
  
  bool BrowserViewRenderer::OnDrawSoftware(SkCanvas* canvas) {
-@@ -405,10 +404,6 @@ bool BrowserViewRenderer::OnDrawSoftware(SkCanvas* canvas) {
-   return CanOnDraw() && CompositeSW(canvas);
+@@ -411,10 +410,6 @@ bool BrowserViewRenderer::OnDrawSoftware(SkCanvas* canvas) {
+   return CanOnDraw() && CompositeSW(canvas, /*software_canvas=*/true);
  }
  
 -bool BrowserViewRenderer::NeedToDrawBackgroundColor() {
@@ -65,7 +65,7 @@ index 82fec21f7b5f..2ec4a5b9e252 100644
  sk_sp<SkPicture> BrowserViewRenderer::CapturePicture(int width,
                                                       int height) {
    TRACE_EVENT0("android_webview", "BrowserViewRenderer::CapturePicture");
-@@ -547,7 +542,6 @@ void BrowserViewRenderer::ReleaseHardware() {
+@@ -550,7 +545,6 @@ void BrowserViewRenderer::ReleaseHardware() {
          current_compositor_frame_consumer_->PassUncommittedFrameOnUI());
    }
    hardware_enabled_ = false;
@@ -74,10 +74,10 @@ index 82fec21f7b5f..2ec4a5b9e252 100644
  }
  
 diff --git a/android_webview/browser/gfx/browser_view_renderer.h b/android_webview/browser/gfx/browser_view_renderer.h
-index 9b3ebdf5f1b9..803aabc4a71d 100644
+index bfbaf303633e1..41692647f82f4 100644
 --- a/android_webview/browser/gfx/browser_view_renderer.h
 +++ b/android_webview/browser/gfx/browser_view_renderer.h
-@@ -81,8 +81,6 @@ class BrowserViewRenderer : public content::SynchronousCompositorClient,
+@@ -83,8 +83,6 @@ class BrowserViewRenderer : public content::SynchronousCompositorClient,
    bool OnDrawHardware();
    bool OnDrawSoftware(SkCanvas* canvas);
  
@@ -86,7 +86,7 @@ index 9b3ebdf5f1b9..803aabc4a71d 100644
    // CapturePicture API methods.
    sk_sp<SkPicture> CapturePicture(int width, int height);
    void EnableOnNewPicture(bool enabled);
-@@ -242,10 +240,6 @@ class BrowserViewRenderer : public content::SynchronousCompositorClient,
+@@ -244,10 +242,6 @@ class BrowserViewRenderer : public content::SynchronousCompositorClient,
    // Used for metrics, indicates if we called invalidate since last draw.
    bool did_invalidate_since_last_draw_ = false;
  
@@ -98,10 +98,10 @@ index 9b3ebdf5f1b9..803aabc4a71d 100644
  
    CopyOutputRequestQueue copy_requests_;
 diff --git a/android_webview/java/src/org/chromium/android_webview/AwContents.java b/android_webview/java/src/org/chromium/android_webview/AwContents.java
-index 3b77c5c3eb08..c6317e90b2d2 100644
+index b1fc08233de5a..22926900b6229 100644
 --- a/android_webview/java/src/org/chromium/android_webview/AwContents.java
 +++ b/android_webview/java/src/org/chromium/android_webview/AwContents.java
-@@ -3703,12 +3703,6 @@ public void onDraw(Canvas canvas) {
+@@ -3963,12 +3963,6 @@ public void onDraw(Canvas canvas) {
                      canvas, canvas.isHardwareAccelerated(), scrollX, scrollY,
                      globalVisibleRect.left, globalVisibleRect.top, globalVisibleRect.right,
                      globalVisibleRect.bottom, ForceAuxiliaryBitmapRendering.sResult);
@@ -114,7 +114,7 @@ index 3b77c5c3eb08..c6317e90b2d2 100644
              if (did_draw && canvas.isHardwareAccelerated()
                      && !ForceAuxiliaryBitmapRendering.sResult) {
                  did_draw = mDrawFunctor.requestDraw(canvas);
-@@ -4077,7 +4071,6 @@ boolean onDraw(long nativeAwContents, AwContents caller, Canvas canvas,
+@@ -4337,7 +4331,6 @@ boolean onDraw(long nativeAwContents, AwContents caller, Canvas canvas,
                  boolean isHardwareAccelerated, int scrollX, int scrollY, int visibleLeft,
                  int visibleTop, int visibleRight, int visibleBottom,
                  boolean forceAuxiliaryBitmapRendering);
@@ -123,5 +123,5 @@ index 3b77c5c3eb08..c6317e90b2d2 100644
          void findNext(long nativeAwContents, AwContents caller, boolean forward);
          void clearMatches(long nativeAwContents, AwContents caller);
 -- 
-2.30.0
+2.35.1
 
